@@ -10,6 +10,8 @@ export interface QueueItem {
   message: string;
 }
 
+const PAGE_SIZE = 10;
+
 const FILTERS = [
   { label: "All", value: "all" },
   { label: "Players", value: "player" },
@@ -18,29 +20,48 @@ const FILTERS = [
 
 type Filter = (typeof FILTERS)[number]["value"];
 
-function fbHref(item: QueueItem): string {
-  const v = item.facebook_url?.trim();
-  if (v) return /^https?:\/\//i.test(v) ? v : `https://m.me/${v.replace(/^@/, "")}`;
-  return `https://www.facebook.com/search/top?q=${encodeURIComponent(item.name)}`;
+function buildAllText(items: QueueItem[]): string {
+  return items
+    .map((i) => `[${i.name}]\n${i.message}`)
+    .join("\n\n---\n\n");
 }
 
 export function MessageQueue({ items }: { items: QueueItem[] }) {
   const [filter, setFilter] = useState<Filter>("all");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   const filtered = items.filter(
     (i) => filter === "all" || i.category === filter,
   );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  const visible = filtered.slice(
+    (current - 1) * PAGE_SIZE,
+    current * PAGE_SIZE,
+  );
 
-  async function copy(item: QueueItem) {
+  function changeFilter(value: Filter) {
+    setFilter(value);
+    setPage(1);
+  }
+
+  async function copyAll() {
     try {
-      await navigator.clipboard.writeText(item.message);
-      setCopiedId(item.id);
-      setTimeout(() => setCopiedId(null), 1500);
+      await navigator.clipboard.writeText(buildAllText(items));
+      setCopiedAll(true);
+      setCopyError(false);
+      setTimeout(() => setCopiedAll(false), 2000);
     } catch {
-      // clipboard unavailable — select fallback ignored
+      setCopyError(true);
     }
   }
+
+  const btn =
+    "rounded-md px-3 py-1.5 text-sm font-medium border border-zinc-300 hover:bg-zinc-50";
+  const disabled =
+    "cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium border border-zinc-200 text-zinc-400";
 
   return (
     <div className="space-y-4">
@@ -50,7 +71,7 @@ export function MessageQueue({ items }: { items: QueueItem[] }) {
             <button
               key={value}
               type="button"
-              onClick={() => setFilter(value)}
+              onClick={() => changeFilter(value)}
               aria-pressed={filter === value}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                 filter === value
@@ -62,46 +83,44 @@ export function MessageQueue({ items }: { items: QueueItem[] }) {
             </button>
           ))}
         </div>
-        <span className="text-sm text-zinc-500">
-          {filtered.length} unpaid {filtered.length === 1 ? "customer" : "customers"}
-        </span>
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-zinc-500">
+            {filtered.length} unpaid{" "}
+            {filtered.length === 1 ? "customer" : "customers"}
+          </span>
+          <button
+            type="button"
+            onClick={copyAll}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+          >
+            {copiedAll ? "Copied ✓" : `Copy all ${items.length} messages`}
+          </button>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {copyError && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          Clipboard unavailable — check browser permissions.
+        </p>
+      )}
+
+      {visible.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-10 text-center text-sm text-zinc-500">
           No unpaid customers in this view.
         </div>
       ) : (
         <ul className="space-y-3">
-          {filtered.map((item) => (
+          {visible.map((item) => (
             <li
               key={item.id}
               className="rounded-xl border border-zinc-200 bg-white p-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-zinc-900">{item.name}</span>
-                  <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700">
-                    {item.category === "player" ? "Player" : "Non-player"}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => copy(item)}
-                    className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700"
-                  >
-                    {copiedId === item.id ? "Copied ✓" : "Copy message"}
-                  </button>
-                  <a
-                    href={fbHref(item)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-                  >
-                    Open Facebook ↗
-                  </a>
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-zinc-900">{item.name}</span>
+                <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                  {item.category === "player" ? "Player" : "Non-player"}
+                </span>
               </div>
               <p
                 title={item.message}
@@ -112,6 +131,45 @@ export function MessageQueue({ items }: { items: QueueItem[] }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {totalPages > 1 && (
+        <nav
+          aria-label="Pagination"
+          className="flex items-center justify-center gap-1"
+        >
+          <button
+            type="button"
+            onClick={() => setPage(current - 1)}
+            disabled={current <= 1}
+            className={current <= 1 ? disabled : btn}
+          >
+            Prev
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPage(p)}
+              aria-current={p === current ? "page" : undefined}
+              className={
+                p === current
+                  ? "rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white"
+                  : btn
+              }
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPage(current + 1)}
+            disabled={current >= totalPages}
+            className={current >= totalPages ? disabled : btn}
+          >
+            Next
+          </button>
+        </nav>
       )}
     </div>
   );
