@@ -1,8 +1,19 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const CSV_FILE = "Stingers Jersey Payment - NONPLAYERS.csv";
+type Category = "player" | "nonplayer";
+
+const FILES: { file: string; category: Category }[] = [
+  {
+    file: "Stingers Jersey Payment - NONPLAYERS.csv",
+    category: "nonplayer",
+  },
+  {
+    file: "Stingers Jersey Payment - players.csv",
+    category: "player",
+  },
+];
 
 function loadEnv(): void {
   try {
@@ -52,13 +63,22 @@ interface OrderRow {
   jersey_name: string | null;
   status: "paid" | "unpaid";
   note: string | null;
+  category: Category;
 }
 
 function isSizeToken(v: string): boolean {
   return v.trim().toUpperCase() in SIZE_MAP;
 }
 
-function parseCsv(text: string): OrderRow[] {
+// only keep lowercase free-text notes ("ari sakon");
+// scratch CSV side-column values (PAID, 45, CASH ON HAND…) are dropped
+function normNote(raw: string | undefined): string | null {
+  const v = (raw ?? "").trim();
+  if (!v || !/^[a-z\s]+$/.test(v)) return null;
+  return v;
+}
+
+function parseCsv(text: string, category: Category): OrderRow[] {
   const rows: OrderRow[] = [];
   const lines = text.split("\n").slice(1);
 
@@ -69,7 +89,7 @@ function parseCsv(text: string): OrderRow[] {
 
     if (!name) continue;
 
-    // Data order is Name,Number,Size — but last two rows are Name,Size,Number.
+    // Data order varies: mostly Name,Number,Size but some rows Name,Size,Number.
     let numberCol = c2;
     let sizeCol = c3;
     if (isSizeToken(c2) && /^\d+$/.test(c3)) {
@@ -88,10 +108,23 @@ function parseCsv(text: string): OrderRow[] {
       size: normSize(sizeCol),
       jersey_name: jerseyName || null,
       status,
-      note: noteRaw || null,
+      note: category === "nonplayer" ? normNote(noteRaw) : null,
+      category,
     });
   }
   return rows;
+}
+
+async function countWhere(
+  db: SupabaseClient,
+  category: Category,
+): Promise<number> {
+  const { count, error } = await db
+    .from("jersey_orders")
+    .select("id", { count: "exact", head: true })
+    .eq("category", category);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 async function main(): Promise<void> {
@@ -103,38 +136,39 @@ async function main(): Promise<void> {
     throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  const csv = readFileSync(join(process.cwd(), CSV_FILE), "utf8");
-  const rows = parseCsv(csv);
-  console.log(`Parsed ${rows.length} rows from ${CSV_FILE}`);
-
   const db = createClient(url, key, { auth: { persistSession: false } });
 
-  const { count } = await db
-    .from("jersey_orders")
-    .select("id", { count: "exact", head: true });
-  if (count && count > 0) {
-    console.log(`jersey_orders already has ${count} rows — aborting seed.`);
-    return;
+  for (const { file, category } of FILES) {
+    const existing = await countWhere(db, category);
+    if (existing > 0) {
+      console.log(
+        `${category}: already has ${existing} rows — skipping ${file}`,
+      );
+      continue;
+    }
+
+    const csv = readFileSync(join(process.cwd(), file), "utf8");
+    const rows = parseCsv(csv, category);
+    console.log(`Parsed ${rows.length} rows from ${file}`);
+
+    const { error } = await db.from("jersey_orders").insert(rows);
+    if (error) throw error;
+
+    const finalCount = await countWhere(db, category);
+    const { count: paidCount } = await db
+      .from("jersey_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("category", category)
+      .eq("status", "paid");
+    const { count: unpaidCount } = await db
+      .from("jersey_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("category", category)
+      .eq("status", "unpaid");
+    console.log(
+      `Seeded ${finalCount} ${category} rows (paid: ${paidCount}, unpaid: ${unpaidCount}).`,
+    );
   }
-
-  const { error } = await db.from("jersey_orders").insert(rows);
-  if (error) throw error;
-
-  const { count: finalCount } = await db
-    .from("jersey_orders")
-    .select("id", { count: "exact", head: true });
-  const { count: paidCount } = await db
-    .from("jersey_orders")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "paid");
-  const { count: unpaidCount } = await db
-    .from("jersey_orders")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "unpaid");
-
-  console.log(
-    `Seeded ${finalCount} rows (paid: ${paidCount}, unpaid: ${unpaidCount}).`,
-  );
 }
 
 main().catch((err) => {

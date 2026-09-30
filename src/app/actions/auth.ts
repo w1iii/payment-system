@@ -6,6 +6,7 @@ import { SESSION_COOKIE, createSessionToken } from "@/lib/auth";
 
 export interface LoginState {
   error: string | null;
+  username: string;
 }
 
 export async function login(
@@ -19,7 +20,7 @@ export async function login(
     username !== process.env.ADMIN_USERNAME ||
     password !== process.env.ADMIN_PASSWORD
   ) {
-    return { error: "Invalid username or password" };
+    return { error: "Invalid username or password", username };
   }
 
   const token = await createSessionToken();

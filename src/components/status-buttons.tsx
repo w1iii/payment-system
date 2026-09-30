@@ -15,19 +15,19 @@ export function StatusButtons({
   status: Status;
 }) {
   return (
-    <form className="inline-flex gap-1">
+    <span className="inline-flex gap-1">
       {OPTIONS.map(({ label, value }) => (
-        <button
-          key={value}
-          type="submit"
-          formAction={setStatus.bind(null, id, value)}
-          disabled={status === value}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
-          title={`Mark ${value}`}
-        >
-          {label}
-        </button>
+        <form key={value} action={setStatus.bind(null, id, value)}>
+          <button
+            type="submit"
+            disabled={status === value}
+            className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+            title={`Mark ${value}`}
+          >
+            {label}
+          </button>
+        </form>
       ))}
-    </form>
+    </span>
   );
 }

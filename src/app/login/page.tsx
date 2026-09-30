@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { login, type LoginState } from "@/app/actions/auth";
 
-const initialState: LoginState = { error: null };
+const initialState: LoginState = { error: null, username: "" };
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(login, initialState);
@@ -25,6 +25,7 @@ export default function LoginPage() {
             name="username"
             autoComplete="username"
             required
+            defaultValue={state.username}
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900"
           />
         </label>

@@ -22,19 +22,38 @@ export default async function OrderDetailPage({
   if (!data) notFound();
 
   const order = data as JerseyOrder;
+  const fb = order.facebook_url?.trim();
+  const fbHref = fb
+    ? /^https?:\/\//i.test(fb)
+      ? fb
+      : `https://m.me/${fb.replace(/^@/, "")}`
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
-            href="/"
+            href={order.category === "player" ? "/players" : "/"}
             className="text-sm text-zinc-500 hover:text-zinc-900"
           >
             ← Back
           </Link>
           <h1 className="text-lg font-semibold">{order.name}</h1>
           <StatusBadge status={order.status} />
+          <span className="rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-medium text-zinc-700">
+            {order.category === "player" ? "Player" : "Non-player"}
+          </span>
+          {fbHref && (
+            <a
+              href={fbHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Facebook ↗
+            </a>
+          )}
         </div>
         <StatusButtons id={order.id} status={order.status} />
       </div>

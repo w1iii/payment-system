@@ -17,7 +17,13 @@ export default async function DashboardLayout({
             </Link>
             <nav className="flex items-center gap-4 text-sm text-zinc-600">
               <Link href="/" className="hover:text-zinc-900">
-                Dashboard
+                Non-players
+              </Link>
+              <Link href="/players" className="hover:text-zinc-900">
+                Players
+              </Link>
+              <Link href="/messages" className="hover:text-zinc-900">
+                Messages
               </Link>
               <Link href="/orders/new" className="hover:text-zinc-900">
                 New order
