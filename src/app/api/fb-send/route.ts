@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { join } from "node:path";
 import { requireAdmin } from "@/lib/auth";
 
 interface FbState {
@@ -32,6 +33,16 @@ export async function POST(request: Request) {
     await requireAdmin();
   } catch {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (process.env.VERCEL === "1") {
+    return Response.json(
+      {
+        error:
+          "Messenger automation cannot run on Vercel serverless functions. Run the app on a persistent Node host with Chrome installed.",
+      },
+      { status: 501 },
+    );
   }
 
   const body = (await request.json().catch(() => ({}))) as {
@@ -113,10 +124,9 @@ export async function POST(request: Request) {
   let child: ChildProcess;
   try {
     child = spawn(
-      "npx",
+      process.execPath,
       [
-        "--no-install",
-        "tsx",
+        join(process.cwd(), "node_modules", "tsx", "dist", "cli.mjs"),
         "scripts/fb-send.ts",
         ...(live ? ["--live"] : []),
         ...idArg,

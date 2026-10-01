@@ -37,6 +37,7 @@ export function SendControls({
   const [ack, setAck] = useState(false);
   const [sendWord, setSendWord] = useState("");
   const [everStarted, setEverStarted] = useState(false);
+  const [localStartedAt, setLocalStartedAt] = useState<number | null>(null);
   const logRef = useRef<HTMLPreElement>(null);
 
   const hasSelection = selectedIds.length > 0;
@@ -64,11 +65,35 @@ export function SendControls({
   const poll = useCallback(async () => {
     try {
       const r = await fetch("/api/fb-send");
-      if (r.ok) setStatus(await r.json());
+      if (!r.ok) return;
+      const next = (await r.json()) as FbStatus;
+      const hasServerState =
+        next.running ||
+        next.startedAt !== null ||
+        next.lines.length > 0 ||
+        Boolean(next.error);
+      if (hasServerState) {
+        setStatus(next);
+        if (!next.running) setLocalStartedAt(null);
+      } else if (
+        localStartedAt !== null &&
+        Date.now() - localStartedAt > 10_000
+      ) {
+        setStatus((current) => ({
+          ...current,
+          running: false,
+          error:
+            "Automation status is unavailable. This deployment needs a persistent Node host with Chrome installed.",
+          lines: [
+            "ERROR|Automation status is unavailable. This deployment needs a persistent Node host with Chrome installed.",
+          ],
+        }));
+        setLocalStartedAt(null);
+      }
     } catch {
       // server restarting; next tick retries
     }
-  }, []);
+  }, [localStartedAt]);
 
   useEffect(() => {
     const t = setTimeout(poll, 0);
@@ -126,6 +151,15 @@ export function SendControls({
     });
     if (r.ok) {
       setEverStarted(true);
+      setLocalStartedAt(Date.now());
+      setStatus((current) => ({
+        ...current,
+        running: true,
+        mode: live ? "live" : "dry",
+        startedAt: Date.now(),
+        error: undefined,
+        lines: ["Starting automation…"],
+      }));
       setConfirming(false);
       setAck(false);
       setSendWord("");
