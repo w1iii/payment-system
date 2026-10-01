@@ -6,6 +6,7 @@ interface FbState {
   lines: string[];
   mode: string | null;
   startedAt: number | null;
+  error?: string;
 }
 
 const store = globalThis as unknown as {
@@ -20,6 +21,7 @@ function state(): FbState {
       lines: [],
       mode: null,
       startedAt: null,
+      error: undefined,
     };
   }
   return store.__fbState;
@@ -108,31 +110,49 @@ export async function POST(request: Request) {
         : targets.length > 0
           ? ["--ids="]
           : [];
-  const child = spawn(
-    "npx",
-    [
-      "tsx",
-      "scripts/fb-send.ts",
-      ...(live ? ["--live"] : []),
-      ...idArg,
-      ...(targets.length > 0 ? [`--targets=${JSON.stringify(targets)}`] : []),
-    ],
-    { cwd: process.cwd(), env: process.env, detached: true },
-  );
+  let child: ChildProcess;
+  try {
+    child = spawn(
+      "npx",
+      [
+        "--no-install",
+        "tsx",
+        "scripts/fb-send.ts",
+        ...(live ? ["--live"] : []),
+        ...idArg,
+        ...(targets.length > 0 ? [`--targets=${JSON.stringify(targets)}`] : []),
+      ],
+      { cwd: process.cwd(), env: process.env, detached: true },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    s.error = `Failed to start automation: ${message}`;
+    s.lines = [`ERROR|${s.error}`];
+    return Response.json({ error: s.error }, { status: 500 });
+  }
+
   store.__fbChild = child;
   s.running = true;
   s.lines = [];
   s.mode = live ? "live" : "dry";
   s.startedAt = Date.now();
+  s.error = undefined;
 
   const push = (chunk: Buffer) => {
     for (const line of chunk.toString().split("\n")) {
       if (line.trim()) s.lines.push(line.trim());
     }
   };
-  child.stdout.on("data", push);
-  child.stderr.on("data", push);
+  child.stdout?.on("data", push);
+  child.stderr?.on("data", push);
+  child.on("error", (error) => {
+    s.error = `Failed to start automation: ${error.message}`;
+    s.lines.push(`ERROR|${s.error}`);
+    s.running = false;
+    store.__fbChild = undefined;
+  });
   child.on("close", (code) => {
+    if (code !== 0) s.error = s.error ?? `Automation exited with code ${code}`;
     s.lines.push(`EXIT|code=${code}`);
     s.running = false;
     store.__fbChild = undefined;

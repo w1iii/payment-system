@@ -7,6 +7,7 @@ interface FbStatus {
   lines: string[];
   mode: string | null;
   startedAt: number | null;
+  error?: string;
 }
 
 interface ManualTarget {
@@ -129,6 +130,15 @@ export function SendControls({
       setAck(false);
       setSendWord("");
       await poll();
+    } else {
+      const result = (await r.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      setStatus((current) => ({
+        ...current,
+        error: result.error ?? "Failed to start automation",
+        lines: [result.error ?? "Failed to start automation"],
+      }));
     }
   }
 
@@ -323,6 +333,11 @@ export function SendControls({
 
       {showLog && (
         <div className="mt-4">
+          {status.error && (
+            <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              {status.error}
+            </p>
+          )}
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
             {status.running
               ? `Running (${status.mode === "live" ? "LIVE" : "dry"} — Chrome window is controlled, do not click inside it)`

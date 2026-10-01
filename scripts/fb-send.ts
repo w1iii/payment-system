@@ -412,8 +412,13 @@ async function main(): Promise<void> {
 
   const live = process.argv.includes("--live");
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Missing SUPABASE_URL / SERVICE_ROLE_KEY");
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "Missing SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY)",
+    );
+  }
 
   const db = createClient(url, key, { auth: { persistSession: false } });
 
