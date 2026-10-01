@@ -13,7 +13,6 @@ export interface QueueItem {
 const PAGE_SIZE = 10;
 
 const FILTERS = [
-  { label: "All", value: "all" },
   { label: "Players", value: "player" },
   { label: "Non-players", value: "nonplayer" },
   { label: "Select", value: "select" },
@@ -38,7 +37,7 @@ export function MessageQueue({
   onToggle: (id: string) => void;
   onClear: () => void;
 }) {
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>("player");
   const [page, setPage] = useState(1);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copyError, setCopyError] = useState(false);

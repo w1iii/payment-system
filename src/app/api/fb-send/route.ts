@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { requireAdmin } from "@/lib/auth";
 
 interface FbState {
   running: boolean;
@@ -25,15 +26,30 @@ function state(): FbState {
 }
 
 export async function POST(request: Request) {
+  try {
+    await requireAdmin();
+  } catch {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = (await request.json().catch(() => ({}))) as {
     action?: string;
     live?: boolean;
+    all?: boolean;
     ids?: unknown;
+    targets?: unknown;
   };
   const s = state();
 
   if (body.action === "abort") {
-    store.__fbChild?.kill("SIGTERM");
+    const child = store.__fbChild;
+    if (child?.pid) {
+      try {
+        process.kill(-child.pid, "SIGTERM");
+      } catch {
+        child.kill("SIGTERM");
+      }
+    }
     return Response.json({ ok: true });
   }
 
@@ -50,15 +66,58 @@ export async function POST(request: Request) {
         )
         .slice(0, 500)
     : [];
+  const targets = Array.isArray(body.targets)
+    ? body.targets
+        .filter(
+          (t): t is { name?: string; value?: string } => {
+            if (typeof t !== "object" || t === null) return false;
+            const rawName = (t as { name?: unknown }).name;
+            const legacyValue = (t as { value?: unknown }).value;
+            const n =
+              typeof rawName === "string" && rawName.trim()
+                ? rawName
+                : typeof legacyValue === "string" &&
+                    legacyValue.trim() &&
+                    !/^https?:\/\//i.test(legacyValue.trim())
+                  ? legacyValue
+                  : null;
+            return (
+              typeof n === "string" &&
+              n.length > 0 &&
+              n.trim().length <= 100 &&
+              !n.includes("\0")
+            );
+          },
+        )
+        .slice(0, 100)
+        .map((t) => {
+          const rawName = (t as { name?: unknown }).name;
+          return {
+            name:
+              typeof rawName === "string" && rawName.trim()
+                ? rawName.trim()
+                : (t.value ?? "").trim(),
+          };
+        })
+    : [];
+  const idArg =
+    body.all === true
+      ? []
+      : ids.length > 0
+        ? [`--ids=${ids.join(",")}`]
+        : targets.length > 0
+          ? ["--ids="]
+          : [];
   const child = spawn(
     "npx",
     [
       "tsx",
       "scripts/fb-send.ts",
       ...(live ? ["--live"] : []),
-      ...(ids.length > 0 ? [`--ids=${ids.join(",")}`] : []),
+      ...idArg,
+      ...(targets.length > 0 ? [`--targets=${JSON.stringify(targets)}`] : []),
     ],
-    { cwd: process.cwd(), env: process.env },
+    { cwd: process.cwd(), env: process.env, detached: true },
   );
   store.__fbChild = child;
   s.running = true;
@@ -77,11 +136,24 @@ export async function POST(request: Request) {
     s.lines.push(`EXIT|code=${code}`);
     s.running = false;
     store.__fbChild = undefined;
+    if (child.pid) {
+      try {
+        process.kill(-child.pid, "SIGTERM");
+      } catch {
+        // group already gone
+      }
+    }
   });
 
   return Response.json({ started: true, mode: s.mode });
 }
 
 export async function GET() {
+  try {
+    await requireAdmin();
+  } catch {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   return Response.json(state());
 }

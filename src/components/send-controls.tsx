@@ -9,6 +9,13 @@ interface FbStatus {
   startedAt: number | null;
 }
 
+interface ManualTarget {
+  id: string;
+  name: string;
+}
+
+type Mode = "selected" | "all" | "manual";
+
 export function SendControls({
   total,
   selectedIds,
@@ -22,16 +29,36 @@ export function SendControls({
     mode: null,
     startedAt: null,
   });
+  const [targets, setTargets] = useState<ManualTarget[]>([]);
+  const [targetInput, setTargetInput] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [pendingMode, setPendingMode] = useState<Mode>("all");
   const [ack, setAck] = useState(false);
   const [sendWord, setSendWord] = useState("");
   const [everStarted, setEverStarted] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
 
   const hasSelection = selectedIds.length > 0;
-  const scope = hasSelection
-    ? `${selectedIds.length} selected customer${selectedIds.length === 1 ? "" : "s"}`
-    : `all ${total} unpaid customers`;
+  const manualCount = targets.length;
+  const hasManual = manualCount > 0;
+
+  function targetsLabel(count: number): string {
+    return `${count} manual name${count === 1 ? "" : "s"}`;
+  }
+
+  function scopeFor(mode: Mode): string {
+    const manual = hasManual ? ` + ${targetsLabel(manualCount)}` : "";
+    if (mode === "manual") return targetsLabel(manualCount);
+    if (mode === "selected")
+      return `${selectedIds.length} selected customer${selectedIds.length === 1 ? "" : "s"}${manual}`;
+    return `all ${total} unpaid customers${manual}`;
+  }
+
+  const idleScope = hasSelection
+    ? `${selectedIds.length} selected${hasManual ? ` + ${manualCount} manual` : ""}`
+    : hasManual
+      ? `all ${total} unpaid + ${manualCount} manual`
+      : `all ${total} unpaid customers`;
 
   const poll = useCallback(async () => {
     try {
@@ -55,11 +82,46 @@ export function SendControls({
     logRef.current?.scrollTo(0, logRef.current.scrollHeight);
   }, [status.lines]);
 
+  function addTarget(e: React.FormEvent) {
+    e.preventDefault();
+    const name = targetInput.trim();
+    setTargetInput("");
+    if (!name) return;
+    const exists = targets.some(
+      (t) => t.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (exists) return;
+    setTargets([
+      ...targets,
+      {
+        id: crypto.randomUUID(),
+        name,
+      },
+    ]);
+  }
+
+  function removeTarget(id: string) {
+    setTargets((t) => t.filter((x) => x.id !== id));
+  }
+
+  function openConfirm(mode: Mode) {
+    setPendingMode(mode);
+    setConfirming(true);
+    setAck(false);
+    setSendWord("");
+  }
+
   async function start(live: boolean) {
+    const body: Record<string, unknown> = {
+      live,
+      targets: targets.map((t) => ({ name: t.name })),
+    };
+    if (pendingMode === "all") body.all = true;
+    else body.ids = pendingMode === "selected" ? selectedIds : [];
     const r = await fetch("/api/fb-send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ live, ids: selectedIds }),
+      body: JSON.stringify(body),
     });
     if (r.ok) {
       setEverStarted(true);
@@ -84,32 +146,44 @@ export function SendControls({
 
   return (
     <section className="border-t border-zinc-200 pt-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-zinc-900">
-            Send via Facebook
+            Send via Messenger
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Targets: {scope} · opens an automated Chrome window · you stay
-            logged in on Facebook
+            Messenger search: {idleScope}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           {!status.running && !confirming && hasSelection && (
             <button
               type="button"
-              onClick={() => setConfirming(true)}
+              onClick={() => openConfirm("selected")}
               className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
             >
               Send selected ({selectedIds.length})
             </button>
           )}
+          {!status.running && !confirming && hasManual && (
+            <button
+              type="button"
+              onClick={() => openConfirm("manual")}
+              className={
+                hasSelection
+                  ? "rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                  : "rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+              }
+            >
+              Send {manualCount} target{manualCount === 1 ? "" : "s"}
+            </button>
+          )}
           {!status.running && !confirming && (
             <button
               type="button"
-              onClick={() => setConfirming(true)}
+              onClick={() => openConfirm("all")}
               className={
-                hasSelection
+                hasSelection || hasManual
                   ? "rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
                   : "rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
               }
@@ -129,10 +203,59 @@ export function SendControls({
         </div>
       </div>
 
+      <form
+        onSubmit={addTarget}
+        className="mt-4 flex flex-wrap items-center gap-2"
+      >
+        <input
+          type="text"
+          value={targetInput}
+          onChange={(e) => setTargetInput(e.target.value)}
+          placeholder="Enter a person&apos;s name"
+          aria-label="Add person name"
+          disabled={status.running}
+          className="w-80 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900 disabled:opacity-50"
+        />
+        <button
+          type="submit"
+          disabled={status.running || !targetInput.trim()}
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-40"
+        >
+          Add
+        </button>
+        {hasManual && (
+          <span className="text-xs text-zinc-500">
+            names are searched in Messenger on top of the chosen scope
+          </span>
+        )}
+      </form>
+
+      {hasManual && (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {targets.map((t) => (
+            <li
+              key={t.id}
+              className="flex items-center gap-2 rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-1.5 text-sm"
+            >
+              <span className="font-medium text-zinc-900">{t.name}</span>
+              <button
+                type="button"
+                onClick={() => removeTarget(t.id)}
+                aria-label={`Remove ${t.name}`}
+                className="rounded-full px-1.5 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {confirming && (
         <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
           <p className="text-sm font-semibold text-amber-900">
-            Mass-messaging from your own Facebook account → {scope}
+            Messenger messages from your own Facebook account →{" "}
+            {scopeFor(pendingMode)}
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
             <li>
