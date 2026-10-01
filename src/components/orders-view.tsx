@@ -84,16 +84,16 @@ export async function OrdersView({
     <div className="space-y-6">
       <SummaryCards counts={{ total, paid, unpaid, pending }} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <FilterTabs current={status} q={q} basePath={basePath} />
-        <div className="flex items-center gap-2">
-          <form method="GET" action={basePath} className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <form method="GET" action={basePath} className="flex min-w-0 flex-1 items-center gap-2">
             {status && <input type="hidden" name="status" value={status} />}
             <input
               name="q"
               defaultValue={q}
               placeholder="Search name…"
-              className="w-48 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-zinc-900"
+              className="min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-zinc-900 sm:w-48 sm:flex-none"
             />
             <button
               type="submit"
@@ -104,7 +104,7 @@ export async function OrdersView({
           </form>
           <Link
             href={`${basePath}/new`}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700"
+            className="rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-700 sm:py-1.5"
           >
             New order
           </Link>

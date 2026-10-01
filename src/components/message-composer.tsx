@@ -33,7 +33,7 @@ export function MessageComposer({
   return (
     <form
       action={formAction}
-      className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6"
+      className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4 sm:p-6"
     >
       <div>
         <h2 className="text-sm font-medium text-zinc-900">
@@ -55,8 +55,8 @@ export function MessageComposer({
         className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900"
       />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block flex-1 text-sm font-medium text-zinc-700">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <label className="block min-w-0 flex-1 text-sm font-medium text-zinc-700">
           Your Facebook account (URL or @username)
           <input
             name="admin_facebook"
@@ -70,7 +70,7 @@ export function MessageComposer({
             href={myMessenger}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
+            className="rounded-md border border-zinc-300 px-3 py-2 text-center text-sm text-zinc-700 hover:bg-zinc-50"
           >
             Open my Messenger ↗
           </a>

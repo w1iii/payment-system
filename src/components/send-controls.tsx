@@ -146,7 +146,7 @@ export function SendControls({
 
   return (
     <section className="border-t border-zinc-200 pt-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-zinc-900">
             Send via Messenger
@@ -155,7 +155,7 @@ export function SendControls({
             Messenger search: {idleScope}
           </p>
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           {!status.running && !confirming && hasSelection && (
             <button
               type="button"
@@ -205,7 +205,7 @@ export function SendControls({
 
       <form
         onSubmit={addTarget}
-        className="mt-4 flex flex-wrap items-center gap-2"
+        className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center"
       >
         <input
           type="text"
@@ -214,7 +214,7 @@ export function SendControls({
           placeholder="Enter a person&apos;s name"
           aria-label="Add person name"
           disabled={status.running}
-          className="w-80 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900 disabled:opacity-50"
+          className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900 disabled:opacity-50 sm:w-80"
         />
         <button
           type="submit"
@@ -296,7 +296,7 @@ export function SendControls({
               value={sendWord}
               onChange={(e) => setSendWord(e.target.value)}
               placeholder="Type SEND"
-              className="w-36 rounded-md border border-amber-400 bg-white px-2 py-1.5 text-sm"
+              className="w-full rounded-md border border-amber-400 bg-white px-2 py-1.5 text-sm sm:w-36"
             />
             <button
               type="button"

@@ -31,15 +31,15 @@ export default async function OrderDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <Link
             href={order.category === "player" ? "/players" : "/"}
             className="text-sm text-zinc-500 hover:text-zinc-900"
           >
             ← Back
           </Link>
-          <h1 className="text-lg font-semibold">{order.name}</h1>
+          <h1 className="max-w-full truncate text-lg font-semibold">{order.name}</h1>
           <StatusBadge status={order.status} />
           <span className="rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-medium text-zinc-700">
             {order.category === "player" ? "Player" : "Non-player"}
@@ -55,15 +55,17 @@ export default async function OrderDetailPage({
             </a>
           )}
         </div>
-        <StatusButtons id={order.id} status={order.status} />
+        <div className="self-start">
+          <StatusButtons id={order.id} status={order.status} />
+        </div>
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-6">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-6">
         <h2 className="mb-4 text-sm font-medium text-zinc-500">Details</h2>
         <OrderForm order={order} mode="edit" />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-zinc-500">
+      <div className="flex flex-col gap-1 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
         <span>Created {new Date(order.created_at).toLocaleString()}</span>
         <span>Updated {new Date(order.updated_at).toLocaleString()}</span>
       </div>

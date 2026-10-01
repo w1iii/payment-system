@@ -76,7 +76,7 @@ export function MessageQueue({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex gap-1 rounded-lg bg-zinc-200/70 p-1">
           {FILTERS.map(({ label, value }) => (
             <button
@@ -95,7 +95,7 @@ export function MessageQueue({
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {isSelect ? (
             <span className="text-sm text-zinc-500">
               {selected.length} of {filtered.length} selected
@@ -118,7 +118,7 @@ export function MessageQueue({
           <button
             type="button"
             onClick={copyAll}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 sm:w-auto"
           >
             {copiedAll ? "Copied ✓" : `Copy all ${items.length} messages`}
           </button>

@@ -17,31 +17,31 @@ export function OrderTable({ orders }: { orders: JerseyOrder[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500">
-            <th className="px-4 py-3 font-medium">Name</th>
-            <th className="px-4 py-3 font-medium">#</th>
-            <th className="px-4 py-3 font-medium">Size</th>
-            <th className="px-4 py-3 font-medium">Jersey name</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            <th className="px-4 py-3 font-medium">Note</th>
-            <th className="px-4 py-3 text-right font-medium">Actions</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Name</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">#</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Size</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Jersey name</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Status</th>
+            <th className="whitespace-nowrap px-3 py-3 font-medium sm:px-4">Note</th>
+            <th className="whitespace-nowrap px-3 py-3 text-right font-medium sm:px-4">Actions</th>
           </tr>
         </thead>
         <tbody>
           {orders.map((o) => (
             <tr key={o.id} className="border-b border-zinc-100 last:border-0">
-              <td className="px-4 py-3 font-medium text-zinc-900">{o.name}</td>
-              <td className="px-4 py-3 tabular-nums text-zinc-600">
+              <td className="px-3 py-3 font-medium text-zinc-900 sm:px-4">{o.name}</td>
+              <td className="px-3 py-3 tabular-nums text-zinc-600 sm:px-4">
                 {o.jersey_number ?? "—"}
               </td>
-              <td className="px-4 py-3 text-zinc-600">{o.size ?? "—"}</td>
-              <td className="px-4 py-3 text-zinc-600">
+              <td className="px-3 py-3 text-zinc-600 sm:px-4">{o.size ?? "—"}</td>
+              <td className="px-3 py-3 text-zinc-600 sm:px-4">
                 {o.jersey_name ?? "—"}
               </td>
-              <td className="px-4 py-3">
+              <td className="px-3 py-3 sm:px-4">
                 <StatusBadge status={o.status} />
               </td>
-              <td className="px-4 py-3 text-zinc-500">{o.note ?? ""}</td>
-              <td className="px-4 py-3">
+              <td className="px-3 py-3 text-zinc-500 sm:px-4">{o.note ?? ""}</td>
+              <td className="px-3 py-3 sm:px-4">
                 <div className="flex items-center justify-end gap-2">
                   <StatusButtons id={o.id} status={o.status} />
                   <Link
