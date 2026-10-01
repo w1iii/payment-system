@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# facebook automation browser profile (session cookies)
+.fb-profile/

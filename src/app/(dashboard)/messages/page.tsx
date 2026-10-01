@@ -1,7 +1,7 @@
 import { getSupabase } from "@/lib/db";
 import { getSettings, renderMessage } from "@/lib/settings";
-import { MessageComposer } from "@/components/message-composer";
-import { MessageQueue, type QueueItem } from "@/components/message-queue";
+import { MessagesPanel } from "@/components/messages-panel";
+import type { QueueItem } from "@/components/message-queue";
 import type { JerseyOrder } from "@/lib/types";
 
 export default async function MessagesPage() {
@@ -23,12 +23,10 @@ export default async function MessagesPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <MessageComposer
-        template={settings.template}
-        adminFacebook={settings.adminFacebook}
-      />
-      <MessageQueue items={items} />
-    </div>
+    <MessagesPanel
+      items={items}
+      template={settings.template}
+      adminFacebook={settings.adminFacebook}
+    />
   );
 }

@@ -16,6 +16,7 @@ const FILTERS = [
   { label: "All", value: "all" },
   { label: "Players", value: "player" },
   { label: "Non-players", value: "nonplayer" },
+  { label: "Select", value: "select" },
 ] as const;
 
 type Filter = (typeof FILTERS)[number]["value"];
@@ -26,15 +27,26 @@ function buildAllText(items: QueueItem[]): string {
     .join("\n\n---\n\n");
 }
 
-export function MessageQueue({ items }: { items: QueueItem[] }) {
+export function MessageQueue({
+  items,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  items: QueueItem[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  onClear: () => void;
+}) {
   const [filter, setFilter] = useState<Filter>("all");
   const [page, setPage] = useState(1);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copyError, setCopyError] = useState(false);
 
-  const filtered = items.filter(
-    (i) => filter === "all" || i.category === filter,
-  );
+  const isSelect = filter === "select";
+  const filtered = isSelect
+    ? items
+    : items.filter((i) => i.category === filter);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, totalPages);
   const visible = filtered.slice(
@@ -85,10 +97,25 @@ export function MessageQueue({ items }: { items: QueueItem[] }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-sm text-zinc-500">
-            {filtered.length} unpaid{" "}
-            {filtered.length === 1 ? "customer" : "customers"}
-          </span>
+          {isSelect ? (
+            <span className="text-sm text-zinc-500">
+              {selected.length} of {filtered.length} selected
+            </span>
+          ) : (
+            <span className="text-sm text-zinc-500">
+              {filtered.length} unpaid{" "}
+              {filtered.length === 1 ? "customer" : "customers"}
+            </span>
+          )}
+          {isSelect && selected.length > 0 && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              Clear
+            </button>
+          )}
           <button
             type="button"
             onClick={copyAll}
@@ -111,25 +138,43 @@ export function MessageQueue({ items }: { items: QueueItem[] }) {
         </div>
       ) : (
         <ul className="space-y-3">
-          {visible.map((item) => (
-            <li
-              key={item.id}
-              className="rounded-xl border border-zinc-200 bg-white p-4"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-zinc-900">{item.name}</span>
-                <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700">
-                  {item.category === "player" ? "Player" : "Non-player"}
-                </span>
-              </div>
-              <p
-                title={item.message}
-                className="mt-2 line-clamp-2 rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-600"
+          {visible.map((item) => {
+            const checked = selected.includes(item.id);
+            return (
+              <li
+                key={item.id}
+                className={`rounded-xl border bg-white p-4 ${
+                  isSelect && checked
+                    ? "border-zinc-900 ring-1 ring-zinc-900"
+                    : "border-zinc-200"
+                }`}
               >
-                {item.message}
-              </p>
-            </li>
-          ))}
+                <div className="flex items-center gap-2">
+                  {isSelect && (
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onToggle(item.id)}
+                      aria-label={`Select ${item.name}`}
+                      className="h-4 w-4 shrink-0 accent-zinc-900"
+                    />
+                  )}
+                  <span className="font-medium text-zinc-900">
+                    {item.name}
+                  </span>
+                  <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                    {item.category === "player" ? "Player" : "Non-player"}
+                  </span>
+                </div>
+                <p
+                  title={item.message}
+                  className="mt-2 line-clamp-2 rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-600"
+                >
+                  {item.message}
+                </p>
+              </li>
+            );
+          })}
         </ul>
       )}
 
