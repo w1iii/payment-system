@@ -22,19 +22,18 @@ export default async function OrderDetailPage({
   if (!data) notFound();
 
   const order = data as JerseyOrder;
-  const fb = order.facebook_url?.trim();
-  const fbHref = fb
-    ? /^https?:\/\//i.test(fb)
-      ? fb
-      : `https://m.me/${fb.replace(/^@/, "")}`
-    : null;
-
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <Link
-            href={order.category === "player" ? "/players" : "/"}
+            href={
+              order.category === "player"
+                ? "/players"
+                : order.category === "nonplayer2"
+                  ? "/nonplayers-2"
+                  : "/"
+            }
             className="text-sm text-zinc-500 hover:text-zinc-900"
           >
             ← Back
@@ -42,18 +41,12 @@ export default async function OrderDetailPage({
           <h1 className="max-w-full truncate text-lg font-semibold">{order.name}</h1>
           <StatusBadge status={order.status} />
           <span className="rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-medium text-zinc-700">
-            {order.category === "player" ? "Player" : "Non-player"}
+            {order.category === "player"
+              ? "Player"
+              : order.category === "nonplayer2"
+                ? "Non-player 2"
+                : "Non-player"}
           </span>
-          {fbHref && (
-            <a
-              href={fbHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Facebook ↗
-            </a>
-          )}
         </div>
         <div className="self-start">
           <StatusButtons id={order.id} status={order.status} />

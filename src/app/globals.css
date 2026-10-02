@@ -17,3 +17,189 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.print-only {
+  display: none;
+}
+
+.print-root {
+  box-sizing: border-box;
+}
+
+@media screen {
+  .print-root {
+    background: #e8e8e8;
+    min-height: 100vh;
+    padding: 24px 0;
+  }
+
+  .print-sheet {
+    background: #ffffff;
+    box-sizing: border-box;
+    margin: 0 auto;
+    min-height: 297mm;
+    padding: 18mm;
+    width: 210mm;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .print-only * {
+    visibility: visible !important;
+  }
+
+  .print-root,
+  .print-root * {
+    visibility: visible !important;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .print-root {
+    background: #ffffff;
+    color: #000000;
+    font-family: Georgia, "Times New Roman", serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .print-sheet {
+    box-sizing: border-box;
+    margin: 0;
+    min-height: 0;
+    padding: 15mm;
+    width: auto;
+  }
+
+  .print-root > .print-sheet {
+    margin: 0;
+  }
+
+  .print-header {
+    border-bottom: 2px solid #000000;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+  }
+
+  .print-header h1 {
+    font-size: 28px;
+    letter-spacing: 0.04em;
+    margin: 0;
+  }
+
+  .print-table {
+    border-collapse: collapse;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .print-table thead {
+    display: table-header-group;
+  }
+
+  .print-table tr {
+    break-inside: avoid;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 0;
+    text-align: left;
+  }
+
+  .print-table thead th {
+    border-bottom: 1.5px solid #000000;
+    padding: 6px 8px;
+  }
+
+  .print-table tbody td {
+    border-bottom: 0.5px solid #888888;
+    padding: 6px 8px;
+  }
+
+  .print-col-no {
+    color: #444444;
+    text-align: right !important;
+    width: 36px;
+  }
+
+  .print-col-status {
+    width: 110px;
+  }
+
+  .print-empty {
+    color: #555555;
+    padding: 20px !important;
+    text-align: center !important;
+  }
+
+  .print-badge {
+    border: 1px solid #000000;
+    display: inline-block;
+    font: 600 12px system-ui, sans-serif;
+    padding: 1px 8px;
+  }
+
+  .print-badge.paid {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .print-badge.unpaid {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .print-sum {
+    break-inside: avoid;
+    margin-left: auto;
+    margin-top: 20px;
+    width: 260px;
+  }
+
+  .print-sum h2 {
+    border-bottom: 1.5px solid #000000;
+    font-size: 16px;
+    margin: 0 0 6px;
+    padding-bottom: 4px;
+  }
+
+  .print-sum dl {
+    margin: 0;
+  }
+
+  .print-sum dl div {
+    display: flex;
+    font-size: 14px;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+
+  .print-sum dt,
+  .print-sum dd {
+    margin: 0;
+  }
+
+  .print-total {
+    border-top: 1.5px solid #000000;
+    font-weight: 700;
+    margin-top: 4px;
+    padding-top: 6px !important;
+  }
+}

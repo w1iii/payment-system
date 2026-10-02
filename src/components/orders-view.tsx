@@ -1,12 +1,21 @@
 import Link from "next/link";
 import { getSupabase } from "@/lib/db";
-import { STATUSES, type Category } from "@/lib/types";
+import { CATEGORY_PRICES, STATUSES, type Category } from "@/lib/types";
 import { FilterTabs } from "@/components/filter-tabs";
 import { OrderTable } from "@/components/order-table";
 import { Pagination } from "@/components/pagination";
 import { SummaryCards } from "@/components/summary-cards";
+import { PrintButton } from "@/components/print-button";
+import { PrintOrders } from "@/components/print-orders";
+import type { JerseyOrder } from "@/lib/types";
 
 export const PAGE_SIZE = 10;
+
+function newOrderPath(category: Category): string {
+  if (category === "player") return "/players/new";
+  if (category === "nonplayer2") return "/nonplayers-2/new";
+  return "/orders/new";
+}
 
 export interface OrdersSearchParams {
   status?: string | string[];
@@ -80,11 +89,32 @@ export async function OrdersView({
 
   if (error) throw new Error(`Failed to load orders: ${error.message}`);
 
+  const { data: allOrders, error: allOrdersError } = await db
+    .from("jersey_orders")
+    .select("*")
+    .eq("category", category)
+    .order("name", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (allOrdersError) {
+    throw new Error(`Failed to load print orders: ${allOrdersError.message}`);
+  }
+
   return (
     <div className="space-y-6">
-      <SummaryCards counts={{ total, paid, unpaid, pending }} />
+      <div className="print-hide">
+        <SummaryCards
+          counts={{
+            total,
+            paid,
+            paidTotal: paid * CATEGORY_PRICES[category],
+            unpaid,
+            pending,
+          }}
+        />
+      </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="print-hide flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <FilterTabs current={status} q={q} basePath={basePath} />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <form method="GET" action={basePath} className="flex min-w-0 flex-1 items-center gap-2">
@@ -103,22 +133,29 @@ export async function OrdersView({
             </button>
           </form>
           <Link
-            href={`${basePath}/new`}
+            href={newOrderPath(category)}
             className="rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-700 sm:py-1.5"
           >
             New order
           </Link>
+          <PrintButton category={category} />
         </div>
       </div>
 
-      <OrderTable orders={data ?? []} />
+      <div className="print-hide">
+        <OrderTable orders={data ?? []} />
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        basePath={basePath}
-        status={status}
-        q={q}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          basePath={basePath}
+          status={status}
+          q={q}
+        />
+      </div>
+      <PrintOrders
+        category={category}
+        orders={(allOrders ?? []) as JerseyOrder[]}
       />
     </div>
   );

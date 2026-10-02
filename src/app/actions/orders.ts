@@ -15,7 +15,6 @@ export interface OrderFormState {
     size: string;
     jersey_name: string;
     note: string;
-    facebook_url: string;
   };
 }
 
@@ -27,7 +26,6 @@ const orderSchema = z.object({
   size: z.enum(SIZE_VALUES).or(z.literal("")),
   jersey_name: z.string().max(50),
   note: z.string().max(200),
-  facebook_url: z.string().max(200),
 });
 
 type OrderInput = {
@@ -36,7 +34,6 @@ type OrderInput = {
   size: string | null;
   jersey_name: string | null;
   note: string | null;
-  facebook_url: string | null;
 };
 
 function rawValues(formData: FormData): NonNullable<OrderFormState["values"]> {
@@ -46,7 +43,6 @@ function rawValues(formData: FormData): NonNullable<OrderFormState["values"]> {
     size: String(formData.get("size") ?? ""),
     jersey_name: String(formData.get("jersey_name") ?? ""),
     note: String(formData.get("note") ?? ""),
-    facebook_url: String(formData.get("facebook_url") ?? ""),
   };
 }
 
@@ -59,7 +55,6 @@ function parseOrder(formData: FormData):
     size: String(formData.get("size") ?? ""),
     jersey_name: String(formData.get("jersey_name") ?? ""),
     note: String(formData.get("note") ?? ""),
-    facebook_url: String(formData.get("facebook_url") ?? ""),
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
@@ -74,15 +69,16 @@ function parseOrder(formData: FormData):
       size: v.size || null,
       jersey_name: v.jersey_name.trim() || null,
       note: v.note.trim() || null,
-      facebook_url: v.facebook_url.trim() || null,
     },
   };
 }
 
-const categorySchema = z.enum(["player", "nonplayer"]);
+const categorySchema = z.enum(["player", "nonplayer", "nonplayer2"]);
 
 function categoryHome(category: Category): string {
-  return category === "player" ? "/players" : "/";
+  if (category === "player") return "/players";
+  if (category === "nonplayer2") return "/nonplayers-2";
+  return "/";
 }
 
 function revalidateOrders(): void {
@@ -170,6 +166,10 @@ export async function deleteOrder(id: string): Promise<void> {
 
   revalidateOrders();
   redirect(
-    row?.category === "player" ? "/players" : "/",
+    row?.category === "player"
+      ? "/players"
+      : row?.category === "nonplayer2"
+        ? "/nonplayers-2"
+        : "/",
   );
 }

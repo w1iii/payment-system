@@ -87,16 +87,6 @@ export function OrderForm({
         />
       </label>
 
-      <label className="block text-sm font-medium text-zinc-700">
-        Facebook profile (optional)
-        <input
-          name="facebook_url"
-          defaultValue={v?.facebook_url ?? order?.facebook_url ?? ""}
-          placeholder="https://facebook.com/… or @username"
-          className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900"
-        />
-      </label>
-
       {state.error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
           {state.error}

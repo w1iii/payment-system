@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-type Category = "player" | "nonplayer";
+type Category = "player" | "nonplayer" | "nonplayer2";
 
 const FILES: { file: string; category: Category }[] = [
   {
@@ -12,6 +12,10 @@ const FILES: { file: string; category: Category }[] = [
   {
     file: "Stingers Jersey Payment - players.csv",
     category: "player",
+  },
+  {
+    file: "batch2.csv",
+    category: "nonplayer2",
   },
 ];
 
